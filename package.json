@@ -1,0 +1,27 @@
+{
+  "name": "dymo-connect",
+  "version": "1.0.0",
+  "description": "Library for printing DYMO labels",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jack-carling/dymo-connect.git"
+  },
+  "keywords": [
+    "node",
+    "dymo",
+    "connect",
+    "label",
+    "print"
+  ],
+  "author": "Jack Carling",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jack-carling/dymo-connect/issues"
+  },
+  "homepage": "https://github.com/jack-carling/dymo-connect#readme",
+  "dependencies": {
+    "node-fetch": "^3.2.5"
+  }
+}
