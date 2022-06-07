@@ -40,6 +40,25 @@ class Dymo {
       return { success: false };
     }
   }
+
+  static async renderLabel(xml) {
+    try {
+      const body = `&labelXml=${xml}`;
+      const response = await fetch(`${this.url}/RenderLabel`, {
+        agent,
+        body,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      const data = await response.text();
+      const result = 'data:image/png;base64,' + data.slice(1, -1);
+      return { success: true, data: result };
+    } catch (e) {
+      return { success: false };
+    }
+  }
 }
 
 module.exports = Dymo;
