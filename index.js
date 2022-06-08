@@ -43,7 +43,7 @@ class Dymo {
 
   static async renderLabel(xml) {
     try {
-      const body = `&labelXml=${xml}`;
+      const body = `labelXml=${xml}`;
       const response = await fetch(`${this.url}/RenderLabel`, {
         agent,
         body,
@@ -55,6 +55,27 @@ class Dymo {
       const data = await response.text();
       const result = 'data:image/png;base64,' + data.slice(1, -1);
       return { success: true, data: result };
+    } catch (e) {
+      return { success: false };
+    }
+  }
+
+  static async printLabel(printer, xml) {
+    try {
+      const body = `printerName=${printer}&labelXml=${xml}`;
+      const response = await fetch(`${this.url}/PrintLabel`, {
+        agent,
+        body,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      const result = await response.text();
+      if (result !== 'true') return { success: false, data: result };
+
+      return { success: true };
     } catch (e) {
       return { success: false };
     }
