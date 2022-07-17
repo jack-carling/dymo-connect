@@ -5,10 +5,6 @@ const https = require('https');
 
 const { DOMParser } = require('@xmldom/xmldom');
 
-const agent = new https.Agent({
-  rejectUnauthorized: false,
-});
-
 class Dymo {
   constructor() {}
 
@@ -18,7 +14,10 @@ class Dymo {
 
   static async getPrinters() {
     try {
-      const response = await fetch(`${this.url}/GetPrinters`, { agent });
+      if (process.env) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
+      const response = await fetch(`${this.url}/GetPrinters`);
       const data = await response.text();
 
       const parser = new DOMParser();
@@ -44,8 +43,10 @@ class Dymo {
   static async renderLabel(xml) {
     try {
       const body = `labelXml=${xml}`;
+      if (process.env) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
       const response = await fetch(`${this.url}/RenderLabel`, {
-        agent,
         body,
         method: 'POST',
         headers: {
@@ -63,8 +64,10 @@ class Dymo {
   static async printLabel(printer, xml) {
     try {
       const body = `printerName=${printer}&labelXml=${xml}`;
+      if (process.env) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
       const response = await fetch(`${this.url}/PrintLabel`, {
-        agent,
         body,
         method: 'POST',
         headers: {
