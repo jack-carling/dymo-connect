@@ -13,7 +13,7 @@ class Dymo {
 
   static async getPrinters() {
     try {
-      if (typeof process !== undefined && process.env) {
+      if (typeof process !== 'undefined' && process.env) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       }
       const response = await fetch(`${this.url}/GetPrinters`);
@@ -42,7 +42,7 @@ class Dymo {
   static async renderLabel(xml) {
     try {
       const body = `labelXml=${xml}`;
-      if (typeof process !== undefined && process.env) {
+      if (typeof process !== 'undefined' && process.env) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       }
       const response = await fetch(`${this.url}/RenderLabel`, {
@@ -63,7 +63,7 @@ class Dymo {
   static async printLabel(printer, xml) {
     try {
       const body = `printerName=${printer}&labelXml=${xml}`;
-      if (typeof process !== undefined && process.env) {
+      if (typeof process !== 'undefined' && process.env) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       }
       const response = await fetch(`${this.url}/PrintLabel`, {

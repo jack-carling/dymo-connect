@@ -1,6 +1,6 @@
 {
   "name": "dymo-connect",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Library for printing DYMO labels",
   "main": "index.js",
   "scripts": {},
