@@ -1,7 +1,6 @@
 'use strict';
 
 const fetch = require('cross-fetch');
-const https = require('https');
 
 const { DOMParser } = require('@xmldom/xmldom');
 
@@ -36,7 +35,7 @@ class Dymo {
       }
       return { success: true, data: result };
     } catch (e) {
-      return { success: false };
+      return { success: false, data: e };
     }
   }
 
@@ -57,7 +56,7 @@ class Dymo {
       const result = 'data:image/png;base64,' + data.slice(1, -1);
       return { success: true, data: result };
     } catch (e) {
-      return { success: false };
+      return { success: false, data: e };
     }
   }
 
@@ -80,7 +79,7 @@ class Dymo {
 
       return { success: true };
     } catch (e) {
-      return { success: false };
+      return { success: false, data: e };
     }
   }
 }
