@@ -5,7 +5,13 @@
   "description": "Library for printing DYMO labels",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
   "scripts": {
+    "dev": "tsc --watch",
     "build": "tsc",
     "prepublishOnly": "npm run build"
   },
@@ -27,7 +33,7 @@
   },
   "homepage": "https://github.com/jack-carling/dymo-connect#readme",
   "dependencies": {
-    "@xmldom/xmldom": "^0.8.2"
+    "fast-xml-parser": "^5.3.0"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
