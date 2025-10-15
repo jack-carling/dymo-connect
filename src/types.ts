@@ -30,3 +30,8 @@ export interface UniversalResponse {
   status: number;
   text(): Promise<string>;
 }
+
+export interface DymoOptions {
+  hostname?: string;
+  port?: number;
+}
