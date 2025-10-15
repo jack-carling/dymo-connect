@@ -1,16 +1,25 @@
 import { XMLParser } from 'fast-xml-parser';
 import https from 'https';
-import type { Printer, PrintersResponse, DymoResponse, UniversalResponse } from './types.ts';
+import type {
+  DymoOptions,
+  Printer,
+  PrintersResponse,
+  DymoResponse,
+  UniversalResponse,
+} from './types.ts';
 
 class Dymo {
-  private static readonly url: string = 'https://127.0.0.1:41951/DYMO/DLS/Printing';
-  private static readonly isNode =
-    typeof process !== 'undefined' && process.versions && process.versions.node;
+  private cachedDymoCertificate: string = '';
+  private url: string;
 
-  private static cachedDymoCertificate: string = '';
+  constructor(options: DymoOptions = {}) {
+    const { hostname = '127.0.0.1', port = 41951 } = options;
+    this.url = `https://${hostname}:${port}/DYMO/DLS/Printing`;
+  }
 
-  private static async fetch(input: RequestInfo, init?: RequestInit) {
-    if (this.isNode) {
+  private async fetch(input: RequestInfo, init?: RequestInit) {
+    const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+    if (isNode) {
       const url = new URL(typeof input === 'string' ? input : input.url);
       const dymoCertificate = await this.getDymoCertificate();
       const dymoAgent = new https.Agent({
@@ -60,7 +69,7 @@ class Dymo {
     }
   }
 
-  private static async fetchDymoCertificate(): Promise<string> {
+  private async fetchDymoCertificate(): Promise<string> {
     const { Socket } = await import('net');
     const tls = await import('tls');
     return new Promise((resolve, reject) => {
@@ -68,7 +77,7 @@ class Dymo {
       const options = {
         rejectUnauthorized: false,
       };
-      const tlsSocket = tls.connect(41951, '127.0.0.1', options, () => {
+      const tlsSocket = tls.connect(this.getPort(), this.getIp(), options, () => {
         const cert = tlsSocket.getPeerCertificate();
         if (!cert.raw) {
           reject(new Error('Failed to fetch certificate'));
@@ -84,7 +93,17 @@ class Dymo {
     });
   }
 
-  private static async getDymoCertificate(): Promise<string> {
+  private getIp(): string {
+    const url = new URL(this.url);
+    return url.hostname;
+  }
+
+  private getPort(): number {
+    const url = new URL(this.url);
+    return parseInt(url.port) || 443;
+  }
+
+  private async getDymoCertificate(): Promise<string> {
     if (this.cachedDymoCertificate) {
       return this.cachedDymoCertificate;
     }
@@ -92,7 +111,7 @@ class Dymo {
     return this.cachedDymoCertificate;
   }
 
-  static async getPrinters(): Promise<DymoResponse<Printer[]>> {
+  async getPrinters(): Promise<DymoResponse<Printer[]>> {
     try {
       const response = await this.fetch(`${this.url}/GetPrinters`);
       const xml = await response.text();
@@ -118,7 +137,7 @@ class Dymo {
     }
   }
 
-  static async renderLabel(xml: string): Promise<DymoResponse<string>> {
+  async renderLabel(xml: string): Promise<DymoResponse<string>> {
     try {
       const body = `labelXml=${encodeURIComponent(xml)}`;
       const response = await this.fetch(`${this.url}/RenderLabel`, {
@@ -136,7 +155,7 @@ class Dymo {
     }
   }
 
-  static async printLabel(printer: string, xml: string): Promise<DymoResponse<boolean>> {
+  async printLabel(printer: string, xml: string): Promise<DymoResponse<boolean>> {
     try {
       const body = `printerName=${encodeURIComponent(printer)}&labelXml=${encodeURIComponent(xml)}`;
       const response = await this.fetch(`${this.url}/PrintLabel`, {
