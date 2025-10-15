@@ -1,4 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
+import https from 'https';
 
 interface Printer {
   name: string;
@@ -27,15 +28,105 @@ interface DymoResponse<T> {
   data: T | Error;
 }
 
+interface UniversalResponse {
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+}
+
 class Dymo {
   private static readonly url: string = 'https://127.0.0.1:41951/DYMO/DLS/Printing';
+  private static readonly isNode =
+    typeof process !== 'undefined' && process.versions && process.versions.node;
+
+  private static cachedDymoCertificate: string = '';
+
+  private static async fetch(input: RequestInfo, init?: RequestInit) {
+    if (this.isNode) {
+      const url = new URL(typeof input === 'string' ? input : input.url);
+      const dymoCertificate = await this.getDymoCertificate();
+      const dymoAgent = new https.Agent({
+        ca: dymoCertificate,
+        rejectUnauthorized: false,
+      });
+      const options: https.RequestOptions = {
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: url.pathname + url.search,
+        method: init?.method || 'GET',
+        agent: dymoAgent,
+      };
+
+      return new Promise<UniversalResponse>((resolve, reject) => {
+        const req = https.request(options, (res) => {
+          let data = '';
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            resolve({
+              ok: (res.statusCode || 500) >= 200 && (res.statusCode || 500) < 300,
+              status: res.statusCode!,
+              text: () => Promise.resolve(data),
+            });
+          });
+        });
+
+        req.on('error', (err) => {
+          reject(err);
+        });
+
+        if (init?.body) {
+          req.write(init.body);
+        }
+
+        req.end();
+      });
+    } else {
+      const response = await globalThis.fetch(input, init);
+      return {
+        ok: response.ok,
+        status: response.status,
+        text: () => response.text(),
+      };
+    }
+  }
+
+  private static async fetchDymoCertificate(): Promise<string> {
+    const { Socket } = await import('net');
+    const tls = await import('tls');
+    return new Promise((resolve, reject) => {
+      const socket = new Socket();
+      const options = {
+        rejectUnauthorized: false,
+      };
+      const tlsSocket = tls.connect(41951, '127.0.0.1', options, () => {
+        const cert = tlsSocket.getPeerCertificate();
+        if (!cert.raw) {
+          reject(new Error('Failed to fetch certificate'));
+          return;
+        }
+        resolve(
+          `-----BEGIN CERTIFICATE-----\n${cert.raw.toString('base64')}\n-----END CERTIFICATE-----`
+        );
+        tlsSocket.end();
+      });
+      tlsSocket.on('error', reject);
+      socket.on('error', reject);
+    });
+  }
+
+  private static async getDymoCertificate(): Promise<string> {
+    if (this.cachedDymoCertificate) {
+      return this.cachedDymoCertificate;
+    }
+    this.cachedDymoCertificate = await this.fetchDymoCertificate();
+    return this.cachedDymoCertificate;
+  }
 
   static async getPrinters(): Promise<DymoResponse<Printer[]>> {
     try {
-      if (typeof process !== 'undefined' && process.env) {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      }
-      const response = await fetch(`${this.url}/GetPrinters`);
+      const response = await this.fetch(`${this.url}/GetPrinters`);
       const xml = await response.text();
 
       const parser = new XMLParser();
@@ -62,10 +153,7 @@ class Dymo {
   static async renderLabel(xml: string): Promise<DymoResponse<string>> {
     try {
       const body = `labelXml=${encodeURIComponent(xml)}`;
-      if (typeof process !== 'undefined' && process.env) {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      }
-      const response = await fetch(`${this.url}/RenderLabel`, {
+      const response = await this.fetch(`${this.url}/RenderLabel`, {
         body,
         method: 'POST',
         headers: {
@@ -83,10 +171,7 @@ class Dymo {
   static async printLabel(printer: string, xml: string): Promise<DymoResponse<boolean>> {
     try {
       const body = `printerName=${encodeURIComponent(printer)}&labelXml=${encodeURIComponent(xml)}`;
-      if (typeof process !== 'undefined' && process.env) {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      }
-      const response = await fetch(`${this.url}/PrintLabel`, {
+      const response = await this.fetch(`${this.url}/PrintLabel`, {
         body,
         method: 'POST',
         headers: {
