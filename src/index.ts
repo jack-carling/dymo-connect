@@ -1,38 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 import https from 'https';
-
-interface Printer {
-  name: string;
-  model: string;
-  connected: boolean;
-  local: boolean;
-  twinTurbo: boolean;
-}
-
-interface LabelWriterPrinterResponse {
-  Name: string;
-  ModelName: string;
-  IsConnected: string;
-  IsLocal: string;
-  IsTwinTurbo: string;
-}
-
-interface PrintersResponse {
-  Printers: {
-    LabelWriterPrinter: Array<LabelWriterPrinterResponse> | LabelWriterPrinterResponse;
-  };
-}
-
-interface DymoResponse<T> {
-  success: boolean;
-  data: T | Error;
-}
-
-interface UniversalResponse {
-  ok: boolean;
-  status: number;
-  text(): Promise<string>;
-}
+import type { Printer, PrintersResponse, DymoResponse, UniversalResponse } from './types.ts';
 
 class Dymo {
   private static readonly url: string = 'https://127.0.0.1:41951/DYMO/DLS/Printing';
