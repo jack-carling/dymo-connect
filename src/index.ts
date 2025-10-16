@@ -6,6 +6,7 @@ import type {
   PrintersResponse,
   DymoResponse,
   UniversalResponse,
+  LabelParameters,
 } from './types.ts';
 
 class Dymo {
@@ -168,11 +169,18 @@ class Dymo {
     }
   }
 
-  async printLabel(printer: string, xml: string): Promise<DymoResponse<boolean>> {
+  async printLabel(
+    printer: string,
+    xml: string,
+    parameters: LabelParameters = {}
+  ): Promise<DymoResponse<boolean>> {
     try {
-      const body = `printerName=${encodeURIComponent(printer)}&labelXml=${encodeURIComponent(xml)}`;
+      const body = new URLSearchParams();
+      body.append('printerName', printer);
+      body.append('labelXml', xml);
+      body.append('printParamsXml', this.createPrintParamsXml(parameters));
       const response = await this.fetch(`${this.url}/PrintLabel`, {
-        body,
+        body: body.toString(),
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -184,6 +192,34 @@ class Dymo {
     } catch (e) {
       return { success: false, data: e as Error };
     }
+  }
+
+  private createPrintParamsXml(parameters: LabelParameters): string {
+    const parameterMappings: Record<string, keyof LabelParameters> = {
+      JobTitle: 'jobTitle',
+      FlowDirection: 'flowDirection',
+      PrintQuality: 'printQuality',
+      TwinTurboRoll: 'twinTurboRoll',
+      Rotation: 'rotation',
+      IsTwinTurbo: 'isTwinTurbo',
+      IsAutoCut: 'isAutoCut',
+    };
+
+    let xmlParameters = '<LabelWriterPrintParams>';
+
+    const copies = parameters.copies ?? 1;
+    xmlParameters += `<Copies>${copies}</Copies>`;
+
+    Object.entries(parameterMappings).forEach(([xmlTag, paramKey]) => {
+      const value = parameters[paramKey];
+      if (value !== undefined) {
+        const formattedValue = typeof value === 'boolean' ? (value ? 'True' : 'False') : value;
+        xmlParameters += `<${xmlTag}>${formattedValue}</${xmlTag}>`;
+      }
+    });
+
+    xmlParameters += '</LabelWriterPrintParams>';
+    return xmlParameters;
   }
 }
 
