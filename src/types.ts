@@ -35,3 +35,14 @@ export interface DymoOptions {
   hostname?: string;
   port?: number;
 }
+
+export interface LabelParameters {
+  copies?: number;
+  jobTitle?: string;
+  flowDirection?: 'LeftToRight' | 'TopToBottom';
+  printQuality?: 'Text' | 'Barcode' | 'Graphics';
+  twinTurboRoll?: 'None' | 'Left' | 'Right';
+  rotation?: 'Rotation0' | 'Rotation90' | 'Rotation180' | 'Rotation270';
+  isTwinTurbo?: boolean;
+  isAutoCut?: boolean;
+}
