@@ -32,7 +32,19 @@ class Dymo {
         path: url.pathname + url.search,
         method: init?.method || 'GET',
         agent: dymoAgent,
+        headers: {},
       };
+
+      if (init?.body) {
+        const contentType =
+          (init.headers as Record<string, string>)?.['Content-Type'] ||
+          'application/x-www-form-urlencoded';
+        options.headers = {
+          ...options.headers,
+          'Content-Type': contentType,
+          'Content-Length': Buffer.byteLength(init.body as string),
+        };
+      }
 
       return new Promise<UniversalResponse>((resolve, reject) => {
         const req = https.request(options, (res) => {
@@ -139,9 +151,10 @@ class Dymo {
 
   async renderLabel(xml: string): Promise<DymoResponse<string>> {
     try {
-      const body = `labelXml=${encodeURIComponent(xml)}`;
+      const body = new URLSearchParams();
+      body.append('labelXml', xml);
       const response = await this.fetch(`${this.url}/RenderLabel`, {
-        body,
+        body: body.toString(),
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
