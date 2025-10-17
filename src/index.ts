@@ -7,6 +7,7 @@ import type {
   DymoResponse,
   UniversalResponse,
   LabelParameters,
+  ConsumableInfo,
 } from './types.ts';
 
 class Dymo {
@@ -144,6 +145,24 @@ class Dymo {
         twinTurbo: printer.IsTwinTurbo === 'True',
       }));
 
+      return { success: true, data: result };
+    } catch (e) {
+      return { success: false, data: e as Error };
+    }
+  }
+
+  async getConsumableInfo(printer: string): Promise<DymoResponse<ConsumableInfo>> {
+    try {
+      const query = `?printerName=${encodeURIComponent(printer)}`;
+      const url = `${this.url}/GetConsumableInfoIn550Printer${query}`;
+      const response = await this.fetch(url);
+      const data = await response.text();
+      const result = { sku: null, labelsRemaining: 0 };
+      if (data.includes('sku')) {
+        const parsed = JSON.parse(data);
+        result.sku = parsed.sku;
+        result.labelsRemaining = parsed.labelsRemaining;
+      }
       return { success: true, data: result };
     } catch (e) {
       return { success: false, data: e as Error };
