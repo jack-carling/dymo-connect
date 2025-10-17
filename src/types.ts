@@ -46,3 +46,8 @@ export interface LabelParameters {
   isTwinTurbo?: boolean;
   isAutoCut?: boolean;
 }
+
+export interface ConsumableInfo {
+  sku: string | null;
+  labelsRemaining: number;
+}
