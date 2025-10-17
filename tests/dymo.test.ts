@@ -164,4 +164,32 @@ describe('Dymo', () => {
       );
     });
   });
+
+  describe('getConsumableInfo', () => {
+    it('should return consumable info when SKU data is present', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              sku: 'S0722540',
+              labelsRemaining: 999,
+            })
+          ),
+      };
+      dymo['fetch'] = vi.fn().mockResolvedValue(mockResponse);
+
+      const result = await dymo.getConsumableInfo('DYMO LabelWriter 550');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
+        sku: 'S0722540',
+        labelsRemaining: 999,
+      });
+      expect(dymo['fetch']).toHaveBeenCalledWith(
+        'https://127.0.0.1:41951/DYMO/DLS/Printing/GetConsumableInfoIn550Printer?printerName=DYMO%20LabelWriter%20550'
+      );
+    });
+  });
 });
