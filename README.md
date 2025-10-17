@@ -12,28 +12,47 @@ npm install dymo-connect
 ### Usage
 
 ```javascript
-const Dymo = require('dymo-connect');
+import Dymo from 'dymo-connect';
 
-Dymo.getPrinters(); // use with await or .then()
+const dymo = new Dymo();
+```
 
-// Returns an array (promise) of every connected printer with their names, models and if the printer is connected (true/false)
+Default hostname and port for DYMO Connect Service is `127.0.0.1` and `41951` respectively. If you would like to change one or both, they can be passed as an object to the constructor.
+
+```javascript
+const options = {
+  hostname: '192.168.1.100',
+  port: 41999,
+};
+
+const dymo = new Dymo(options);
+```
+
+### Get printers
+
+```javascript
+await dymo.getPrinters();
+
+// Returns an array of every connected printer with their names, models and if the printer is connected, local and twinTurbo
 
 // {
 //   success: true,
 //   data: [
 //     {
-//       name: 'DYMO LabelWriter 450',
-//       model: 'DYMO LabelWriter 450',
+//       name: 'DYMO LabelWriter 550',
+//       model: 'DYMO LabelWriter 550',
 //       connected: true,
-//     }
-//   ]
+//       local: true,
+//       twinTurbo: false,
+//     },
+//   ],
 // }
 ```
 
 ### Render label preview
 
 ```javascript
-Dymo.renderLabel(xml); // use with await or .then()
+await dymo.renderLabel(xml);
 
 // Returns a base64 encoded png string
 ```
@@ -41,48 +60,50 @@ Dymo.renderLabel(xml); // use with await or .then()
 ### Printing
 
 ```javascript
-Dymo.printLabel('DYMO LabelWriter 450', xml);
+await dymo.printLabel('DYMO LabelWriter 550', xml);
 
-// Will print the xml provided to a printer named "DYMO LabelWriter 450"
+// Will print the xml provided to a printer named DYMO LabelWriter 550
 ```
 
-### Sample xml
+An optional third parameter can be passed to the printLabel method to provide additional label parameters.
 
-```xml
-<DieCutLabel Version="8.0" Units="twips">
-   <PaperOrientation>Portrait</PaperOrientation>
-   <Id>Small30334</Id>
-   <PaperName>30334 2-1/4 in x 1-1/4 in</PaperName>
-   <DrawCommands>
-      <RoundRectangle X="0" Y="0" Width="3240" Height="1800" Rx="270" Ry="270" />
-   </DrawCommands>
-   <ObjectInfo>
-      <TextObject>
-         <Name>Text</Name>
-         <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
-         <BackColor Alpha="0" Red="255" Green="255" Blue="255" />
-         <LinkedObjectName />
-         <Rotation>Rotation0</Rotation>
-         <IsMirrored>False</IsMirrored>
-         <IsVariable>True</IsVariable>
-         <HorizontalAlignment>Center</HorizontalAlignment>
-         <VerticalAlignment>Middle</VerticalAlignment>
-         <TextFitMode>ShrinkToFit</TextFitMode>
-         <UseFullFontHeight>False</UseFullFontHeight>
-         <Verticalized>False</Verticalized>
-         <StyledText>
-            <Element>
-               <String>Hello, World!</String>
-               <Attributes>
-                  <Font Family="Arial" Size="10" Bold="True" Italic="False" Underline="False" Strikeout="False" />
-                  <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
-               </Attributes>
-            </Element>
-         </StyledText>
-      </TextObject>
-      <Bounds X="0" Y="0" Width="3240" Height="1800" />
-   </ObjectInfo>
-</DieCutLabel>
+```javascript
+const parameters = { copies: 10 };
+
+await dymo.printLabel('DYMO LabelWriter 550', xml, parameters);
 ```
 
-This sample XML code will print "Hello, World!" in the center of a 2&#188;" x 1&#188;" - 57mm x 37mm label (DYMO LabelWriter Multi-Purpose item #30334).
+| Property        | Type                                                                  | Optional | Description                                    |
+| --------------- | --------------------------------------------------------------------- | -------- | ---------------------------------------------- |
+| `copies`        | `number`                                                              | Yes      | Number of copies to print                      |
+| `jobTitle`      | `string`                                                              | Yes      | Job title for the label                        |
+| `flowDirection` | `'LeftToRight'` \| `'TopToBottom'`                                    | Yes      | Direction in which labels flow                 |
+| `printQuality`  | `'Text'` \| `'Barcode'` \| `'Graphics'`                               | Yes      | Quality mode for printing                      |
+| `twinTurboRoll` | `'None'` \| `'Left'` \| `'Right'`                                     | Yes      | Which roll to use (if any)                     |
+| `rotation`      | `'Rotation0'` \| `'Rotation90'` \| `'Rotation180'` \| `'Rotation270'` | Yes      | Label rotation angle                           |
+| `isTwinTurbo`   | `boolean`                                                             | Yes      | If a Twin Turbo printer is used                |
+| `isAutoCut`     | `boolean`                                                             | Yes      | Whether auto-cutting is enabled (if supported) |
+
+### How to get XML
+
+Open the DYMO Connect software, design your label, and save it. The saved file (with a `.dymo` extension) is essentially an XML file, which you can open in a browser or an IDE. You can then replace parts of the XML with your dynamic values.
+
+### Get consumable info
+
+The LabelWriter 550 series printers support label recognition, which allows DYMO software to receive information about the inserted labels, such as the label size and the number of labels remaining on the roll. You can call this method to retrieve the SKU (stock keeping unit) and the remaining label count.
+
+```javascript
+await dymo.getConsumableInfo('DYMO LabelWriter 550');
+
+// {
+//   success: true,
+//   data: {
+//     sku: 'S0722540',
+//     labelsRemaining: 985,
+//   },
+// }
+```
+
+### Security
+
+DYMO uses a self-signed certificate for the internal endpoints we rely on. To enable secure communication in Node.js, we bundle this certificate and include it in the HTTPS requests to DYMO. This allows the connection to be trusted without disabling certificate verification.
