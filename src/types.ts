@@ -14,12 +14,6 @@ export interface LabelWriterPrinterResponse {
   IsTwinTurbo: string;
 }
 
-export interface PrintersResponse {
-  Printers: {
-    LabelWriterPrinter: Array<LabelWriterPrinterResponse> | LabelWriterPrinterResponse;
-  };
-}
-
 export interface DymoResponse<T> {
   success: boolean;
   data: T | Error;
