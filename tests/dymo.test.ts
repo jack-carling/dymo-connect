@@ -111,6 +111,23 @@ describe('Dymo', () => {
       expect(result.success).toBe(false);
       expect(result.data).toBeInstanceOf(Error);
     });
+
+    it('should handle self-closing root tag in case no printers installed', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve('<Printers/>'),
+      };
+      dymo['fetch'] = vi.fn().mockResolvedValue(mockResponse);
+
+      const result = await dymo.getPrinters();
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual([]);
+      expect(dymo['fetch']).toHaveBeenCalledWith(
+        'https://127.0.0.1:41951/DYMO/DLS/Printing/GetPrinters'
+      );
+    });
   });
 
   describe('renderLabel', () => {
