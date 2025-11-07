@@ -1,9 +1,7 @@
-import { XMLParser } from 'fast-xml-parser';
 import https from 'https';
 import type {
   DymoOptions,
   Printer,
-  PrintersResponse,
   DymoResponse,
   UniversalResponse,
   LabelParameters,
@@ -130,20 +128,33 @@ class Dymo {
       const response = await this.fetch(`${this.url}/GetPrinters`);
       const xml = await response.text();
 
-      const parser = new XMLParser();
-      const parsedXml: PrintersResponse = parser.parse(xml);
+      const printerRegex = /<LabelWriterPrinter>(.*?)<\/LabelWriterPrinter>/gs;
+      const printerMatches = xml.match(printerRegex) || [];
 
-      const printers = Array.isArray(parsedXml.Printers.LabelWriterPrinter)
-        ? parsedXml.Printers.LabelWriterPrinter
-        : [parsedXml.Printers.LabelWriterPrinter];
+      const result: Printer[] = printerMatches.map((printerXml) => {
+        const nameMatch = printerXml.match(/<Name>(.*?)<\/Name>/);
+        const name = nameMatch ? nameMatch[1] : '';
 
-      const result: Printer[] = printers.map((printer) => ({
-        name: printer.Name,
-        model: printer.ModelName,
-        connected: printer.IsConnected === 'True',
-        local: printer.IsLocal === 'True',
-        twinTurbo: printer.IsTwinTurbo === 'True',
-      }));
+        const modelMatch = printerXml.match(/<ModelName>(.*?)<\/ModelName>/);
+        const model = modelMatch ? modelMatch[1] : '';
+
+        const isConnectedMatch = printerXml.match(/<IsConnected>(.*?)<\/IsConnected>/);
+        const connected = isConnectedMatch ? isConnectedMatch[1] === 'True' : false;
+
+        const isLocalMatch = printerXml.match(/<IsLocal>(.*?)<\/IsLocal>/);
+        const local = isLocalMatch ? isLocalMatch[1] === 'True' : false;
+
+        const isTwinTurboMatch = printerXml.match(/<IsTwinTurbo>(.*?)<\/IsTwinTurbo>/);
+        const twinTurbo = isTwinTurboMatch ? isTwinTurboMatch[1] === 'True' : false;
+
+        return {
+          name,
+          model,
+          connected,
+          local,
+          twinTurbo,
+        };
+      });
 
       return { success: true, data: result };
     } catch (e) {
